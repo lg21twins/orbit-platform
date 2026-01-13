@@ -138,41 +138,43 @@ async function scrapeAnimate() {
 
         console.log(`✅ Scraped ${events.length} events.`);
 
-        // Check for existing events to avoid duplicates (manual upsert logic)
-        const { data: existingEvents } = await supabase
-            .from('events')
-            .select('title');
+        console.log(`✅ Scraped ${events.length} events. syncing with database...`);
 
-        const existingTitles = new Set(existingEvents?.map(e => e.title) || []);
+        for (const event of events) {
+            // Check if exists
+            const { data: existing } = await supabase
+                .from('events')
+                .select('id')
+                .eq('title', event.title)
+                .maybeSingle();
 
-        const newEvents = events.filter(e => !existingTitles.has(e.title));
-
-        if (newEvents.length === 0) {
-            console.log("✨ No new events to insert.");
-        } else {
-            const dbPayload = newEvents.map(e => ({
-                title: e.title,
+            const payload = {
+                title: event.title,
                 type: 'POPUP',
                 location_name: 'Animate Korea',
                 verification_level: 2,
-                image_urls: e.image_url ? [e.image_url] : [],
-                description: e.description,
-                start_date: e.start_date,
-                end_date: e.end_date,
-                source_url: e.source_url
-            }));
+                image_urls: event.image_urls,
+                description: event.description,
+                start_date: event.start_date,
+                end_date: event.end_date,
+                source_url: event.source_url
+            };
 
-            const { data: inserted, error } = await supabase
-                .from('events')
-                .insert(dbPayload)
-                .select();
-
-            if (error) {
-                console.error("❌ Supabase Insert Error:", error);
+            if (existing) {
+                console.log(`   🔄 Updating existing event: ${event.title}`);
+                await supabase
+                    .from('events')
+                    .update(payload)
+                    .eq('id', existing.id);
             } else {
-                console.log(`🎉 Successfully inserted ${inserted.length} new events!`);
+                console.log(`   ✨ Inserting new event: ${event.title}`);
+                await supabase
+                    .from('events')
+                    .insert(payload);
             }
         }
+        console.log("🎉 Database sync complete!");
+
     } catch (error) {
         console.error("❌ Scraper Error:", error.message);
     }
