@@ -1,8 +1,11 @@
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, CheckCircle, AlertCircle, Clock, ThumbsUp, ThumbsDown } from 'lucide-react';
 
+import { useNavigate } from 'react-router-dom';
+
 const GravityCard = ({ event, delay = 0 }) => {
-    const { title, type, location_name, verification_level, image_urls } = event;
+    const { id, title, type, location_name, verification_level, image_urls } = event;
+    const navigate = useNavigate();
 
     // Floating animation variants
     const floatVariants = {
@@ -39,6 +42,7 @@ const GravityCard = ({ event, delay = 0 }) => {
             variants={floatVariants}
             animate="animate"
             whileHover={{ scale: 1.05, zIndex: 10 }}
+            onClick={() => navigate(`/orbit/event/${id}`)}
             className="relative w-64 h-80 rounded-2xl overflow-hidden backdrop-blur-md bg-black/40 border border-white/10 shadow-xl group cursor-pointer"
         >
             {/* Background Image */}

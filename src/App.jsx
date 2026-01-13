@@ -12,6 +12,7 @@ const Archive = lazy(() => import('./components/Archive'));
 const HandParticleInteraction = lazy(() => import('./components/HandParticleInteraction'));
 const OrbitLanding = lazy(() => import('./pages/Orbit/OrbitLanding'));
 const OrbitFeed = lazy(() => import('./pages/Orbit/OrbitFeed'));
+const OrbitEventDetail = lazy(() => import('./pages/Orbit/OrbitEventDetail'));
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -26,6 +27,7 @@ function AnimatedRoutes() {
         <Route path="/interaction" element={<PageTransition><HandParticleInteraction /></PageTransition>} />
         <Route path="/orbit" element={<PageTransition><OrbitLanding /></PageTransition>} />
         <Route path="/orbit/feed" element={<PageTransition><OrbitFeed /></PageTransition>} />
+        <Route path="/orbit/event/:id" element={<PageTransition><OrbitEventDetail /></PageTransition>} />
       </Routes>
     </AnimatePresence>
   );
