@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, MapPin, ExternalLink, Share2, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const OrbitEventDetail = () => {
     const { id } = useParams();
@@ -110,12 +112,11 @@ const OrbitEventDetail = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="prose prose-invert max-w-none"
+                        className="prose prose-invert max-w-none prose-headings:text-blue-400 prose-p:text-gray-300 prose-li:text-gray-300 prose-strong:text-white"
                     >
-                        <h2 className="text-2xl font-bold mb-4 border-l-4 border-blue-500 pl-4">Event Details</h2>
-                        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {event.description || "No description provided."}
-                        </div>
+                        </ReactMarkdown>
                     </motion.div>
 
                     {/* Image Gallery */}

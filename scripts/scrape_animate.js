@@ -80,7 +80,9 @@ async function scrapeAnimate() {
 
                 // --- ADVANCED: Fetch Detail Page & OCR ---
                 const detailUrl = `https://www.animate-onlineshop.co.kr/board/view.php?bdId=event&sno=${eventId}`;
-                let description = dateText;
+
+                // Initialize description with structured Markdown
+                let description = `## 📅 기간 (Period)\n${dateText}\n\n`;
                 let detailImages = [];
 
                 try {
@@ -97,7 +99,7 @@ async function scrapeAnimate() {
                     // Based on common GodoMall templates
                     const contentText = $detail('.view_cont').text().trim() || $detail('.board_view_content').text().trim();
                     if (contentText) {
-                        description += "\n\n" + contentText;
+                        description += `## 📝 상세 내용 (Details)\n${contentText}\n\n`;
                     }
 
                     // Extract all images in detail page
@@ -106,13 +108,14 @@ async function scrapeAnimate() {
                         if (src) detailImages.push(src);
                     });
 
-                    // OCR on the Main Image (imgSrc) if description is short
-                    if (imgSrc && description.length < 50) {
+                    // OCR on the Main Image (imgSrc) 
+                    if (imgSrc) {
                         console.log(`   Performing OCR on image...`);
                         try {
-                            // Use Tesseract (Worker is created automatically)
                             const { data: { text: ocrText } } = await Tesseract.recognize(imgSrc, 'kor');
-                            description += "\n\n[OCR Analysis]\n" + ocrText;
+                            // Clean up OCR text slightly
+                            const cleanOcr = ocrText.split('\n').filter(line => line.trim().length > 0).join('\n');
+                            description += `## 🤖 AI 분석 (Image Analysis)\n> 이미지에서 텍스트를 자동 추출했습니다.\n\n\`\`\`\n${cleanOcr}\n\`\`\``;
                         } catch (ocrErr) {
                             console.warn("   OCR Failed:", ocrErr.message);
                         }
