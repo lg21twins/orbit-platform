@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import Tesseract from 'tesseract.js';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -44,14 +45,14 @@ async function scrapeAnimate() {
         // Typical selectors: .board_list tbody tr, or .list_card li
         // Let's rely on finding titles and dates.
 
-        // Correct selectors based on HTML inspection
-        // List Items: .event_list ul li
-        $('.event_list ul li').each((i, el) => {
+        // Use a for...of loop to handle async operations properly
+        for (let i = 0; i < 5; i++) { // Limit to 5 newest items for performance in this demo
+            const el = $('.event_list ul li').eq(i);
             const titleEl = $(el).find('.board_tit strong');
             const title = titleEl.text().trim();
 
             const dateEl = $(el).find('.board_event_day span');
-            const dateText = dateEl.text().replace('이벤트기간', '').trim(); // e.g. "2026.01.16 00:00 ~ 2026.02.08 23:59"
+            const dateText = dateEl.text().replace('이벤트기간', '').trim();
 
             const imgEl = $(el).find('.board_img img');
             let imgSrc = imgEl.attr('src');
@@ -77,18 +78,63 @@ async function scrapeAnimate() {
                     endDate = new Date(parts[1].trim());
                 }
 
+                // --- ADVANCED: Fetch Detail Page & OCR ---
+                const detailUrl = `https://www.animate-onlineshop.co.kr/board/view.php?bdId=event&sno=${eventId}`;
+                let description = dateText;
+                let detailImages = [];
+
+                try {
+                    console.log(`verify: Fetching detail for ${title}...`);
+                    const { data: detailHtml } = await axios.get(detailUrl, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        }
+                    });
+                    const $detail = cheerio.load(detailHtml);
+
+                    // Extract text from the view content
+                    // Common selectors: .view_cont, .goods_view_cont
+                    // Based on common GodoMall templates
+                    const contentText = $detail('.view_cont').text().trim() || $detail('.board_view_content').text().trim();
+                    if (contentText) {
+                        description += "\n\n" + contentText;
+                    }
+
+                    // Extract all images in detail page
+                    $detail('.view_cont img, .board_view_content img').each((_, img) => {
+                        const src = $detail(img).attr('src');
+                        if (src) detailImages.push(src);
+                    });
+
+                    // OCR on the Main Image (imgSrc) if description is short
+                    if (imgSrc && description.length < 50) {
+                        console.log(`   Performing OCR on image...`);
+                        try {
+                            // Use Tesseract (Worker is created automatically)
+                            const { data: { text: ocrText } } = await Tesseract.recognize(imgSrc, 'kor');
+                            description += "\n\n[OCR Analysis]\n" + ocrText;
+                        } catch (ocrErr) {
+                            console.warn("   OCR Failed:", ocrErr.message);
+                        }
+                    }
+
+                } catch (err) {
+                    console.error(`   Failed to fetch details: ${err.message}`);
+                }
+
                 events.push({
                     title: title,
                     type: 'POPUP', // Default
                     location: 'Animate Korea',
-                    url: `https://www.animate-onlineshop.co.kr/board/view.php?bdId=event&sno=${eventId}`,
-                    event_date_start: startDate.toISOString(),
-                    event_date_end: endDate.toISOString(),
+                    source_url: detailUrl, // Use detail URL as source
+                    start_date: startDate.toISOString(),
+                    end_date: endDate.toISOString(),
                     image_url: imgSrc ? imgSrc : null,
-                    description: dateText
+                    image_urls: detailImages.length > 0 ? detailImages : (imgSrc ? [imgSrc] : []),
+                    description: description
                 });
             }
-        });
+        }
 
         console.log(`✅ Scraped ${events.length} events.`);
 
