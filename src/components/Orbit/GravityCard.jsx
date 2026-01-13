@@ -77,7 +77,14 @@ const GravityCard = ({ event, delay = 0 }) => {
                     )}
                     <div className="flex items-center">
                         <Calendar size={12} className="mr-1.5" />
-                        Coming Soon
+                        {event.start_date ? (
+                            <span>
+                                {new Date(event.start_date).toLocaleDateString()}
+                                {event.end_date && ` - ${new Date(event.end_date).toLocaleDateString()}`}
+                            </span>
+                        ) : (
+                            <span>Coming Soon</span>
+                        )}
                     </div>
                 </div>
 
