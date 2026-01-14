@@ -46,7 +46,7 @@ async function scrapeAnimate() {
         // Let's rely on finding titles and dates.
 
         // Use a for...of loop to handle async operations properly
-        for (let i = 0; i < 5; i++) { // Limit to 5 newest items for performance in this demo
+        for (let i = 0; i < 15; i++) { // Increase limit to 15 to cover more past events
             const el = $('.event_list ul li').eq(i);
             const titleEl = $(el).find('.board_tit strong');
             const title = titleEl.text().trim();
@@ -96,8 +96,14 @@ async function scrapeAnimate() {
 
                     // Extract text from the view content
                     // Common selectors: .view_cont, .goods_view_cont
-                    // Based on common GodoMall templates
-                    const contentText = $detail('.view_cont').text().trim() || $detail('.board_view_content').text().trim();
+                    const contentContainer = $detail('.view_cont').length ? $detail('.view_cont') : $detail('.board_view_content');
+
+                    // Pre-process: Replace <br> with newlines to preserve formatting
+                    contentContainer.find('br').replaceWith('\n');
+                    contentContainer.find('p').after('\n\n'); // Separate paragraphs
+
+                    const contentText = contentContainer.text().trim();
+
                     if (contentText) {
                         description += `## 📝 상세 내용 (Details)\n${contentText}\n\n`;
                     }
@@ -108,8 +114,8 @@ async function scrapeAnimate() {
                         if (src) detailImages.push(src);
                     });
 
-                    // OCR on the Main Image (imgSrc) 
-                    if (imgSrc) {
+                    // OCR on the Main Image (imgSrc) -> ONLY if content is short/missing
+                    if (imgSrc && (!contentText || contentText.length < 50)) {
                         console.log(`   Performing OCR on image...`);
                         try {
                             const { data: { text: ocrText } } = await Tesseract.recognize(imgSrc, 'kor');
