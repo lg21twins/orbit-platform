@@ -15,6 +15,13 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 // Use Service Role Key for admin access (writing to DB)
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+console.log(`Debug: VITE_SUPABASE_URL exists? ${!!SUPABASE_URL}`);
+console.log(`Debug: SUPABASE_SERVICE_ROLE_KEY exists? ${!!SUPABASE_KEY}`);
+if (SUPABASE_KEY) {
+    console.log(`Debug: Key length: ${SUPABASE_KEY.length}`);
+    console.log(`Debug: Key starts with: ${SUPABASE_KEY.substring(0, 5)}...`);
+}
+
 if (!SUPABASE_URL || !SUPABASE_KEY) {
     console.error("❌ Missing Supabase keys in .env file (Need SUPABASE_SERVICE_ROLE_KEY).");
     process.exit(1);
